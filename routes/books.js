@@ -12,7 +12,7 @@ router.post('/', auth, multer, bookCtrl.createBook);
 router.delete('/:id', auth, bookCtrl.deleteBook);
 // router.post('/:id/rating', auth, bookCtrl.rateBook);
 // router.put('/:id/rating', auth, bookCtrl.rateBook);
-router.put('/:id', auth,multer, bookCtrl.modifyBook);
+router.put('/:id', auth, multer, bookCtrl.modifyBook);
 
 
 

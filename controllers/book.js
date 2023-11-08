@@ -32,7 +32,7 @@ exports.createBook = (req, res, next) => {
 
 }
     
-exports.modifyBook = (req, res, next) => {         
+exports.modifyBook = (req, res, next) => {
     Book.findOne({_id: req.params.id})
     .then(book => {
         // Check if the user is the post owner
