@@ -14,16 +14,23 @@ exports.getAllBook = (req, res, next) => {
       .catch(error => res.status(400).json({ error }));
 };
 
+exports.getBestRatings = (req, res, next) => {
+    Book.find().sort({ratings : -1}).limit(3)
+    .then(bestBooks => res.status(200).json(bestBooks))       
+    .catch(error => res.status(400).json({ error }));
+}
+
 exports.createBook = (req, res, next) => {
     const bookObject = JSON.parse(req.body.book);
 
+    // to be sure that the id saved is the post owner
     delete bookObject._id;
     delete bookObject._userId;
-
+    
     const book = new Book({
         ...bookObject,
         userId: req.auth.userId,
-        imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
+        imageUrl: `${req.protocol}://${req.get('host')}/${req.file.path}`
     });
 
     book.save()
@@ -37,14 +44,14 @@ exports.modifyBook = (req, res, next) => {
     .then(book => {
         // Check if the user is the post owner
         if(book.userId != req.auth.userId){
-            res.status(401).json({message: 'Non-autorisé'});
+            res.status(403).json({message: '403: unauthorized request'});
         } else {
             // Check if the user change the file
             if(req.file){
                 //If yes, we update the data and the image url
                 const updatedBook = {
                     ...JSON.parse(req.body.book),
-                    imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
+                    imageUrl: `${req.protocol}://${req.get('host')}/${req.file.path}`
                 };
                 delete updatedBook._userId;
                 Book.updateOne({_id: req.params.id}, {...updatedBook, _id: req.params.id})
@@ -59,7 +66,7 @@ exports.modifyBook = (req, res, next) => {
                                 });
                                 res.status(200).json({message : 'Objet modifié !'})
                             })
-                            .catch(error => res.status(401).json({ error }));
+                            .catch(error => res.status(401).json({ message : 'problème de modification2'  }));
             } else {
                 //if the file doesn't change, we only update the data
                 const updatedBook = {...req.body};
@@ -67,31 +74,33 @@ exports.modifyBook = (req, res, next) => {
 
                 Book.updateOne({_id: req.params.id}, {...updatedBook, _id: req.params.id})
                             .then(()=> res.status(200).json({message : 'Objet modifié !'}))
-                            .catch(error => res.status(401).json({ error }));
+                            .catch(error => res.status(401).json({ message : 'problème de modification' }));
             }
         }
     })
     .catch(error => res.status(400).json({ error }));
 }
 
-// exports.rateBook = (req, res, next) => {
-//     Book.findOne({ _id: req.params.id })
-//         .then(book => {
-//             if(book.ratings.some(item => item.userId === req.body.userId)){
-//                 res.status(401).json({message: 'Note déjà enregistrée pour ce livre'});
-//             } else {
-//                 book.ratings.push({
-//                     userId: req.auth.userId,
-//                     grade: req.body.rating
-//                 });
-
-//                 book.save()
-//                 .then(()=> res.status(201).json({message: 'Note enregistrée !'}))
-//                 .catch(error => res.status(400).json({ error }));
-//             }
-//         })
-//         .catch(error => res.status(500).json({ error }));
-// }
+exports.rateBook = (req, res, next) => {
+    Book.findOne({ _id: req.params.id })
+        .then(book => {
+            if(book.ratings.some(item => item.userId === req.auth.userId)){
+                console.log("note déjà enregistrée");
+                res.status(401).json({message: 'Note déjà enregistrée pour ce livre'});
+            } else {
+                book.ratings.push({
+                    userId: req.auth.userId,
+                    grade: req.body.rating
+                });
+                const newAverageRating = book.ratings.reduce((acc, element) => acc + element.grade, 0)/book.ratings.length;
+                book.averageRating = newAverageRating;
+                book.save()
+                .then(()=> res.status(201).json(book))
+                .catch(error => res.status(400).json({ error }));
+            }
+        })
+        .catch(error => res.status(500).json({ error }));
+}
 
 exports.deleteBook = (req, res, next) => {
     Book.findOne({_id: req.params.id})
