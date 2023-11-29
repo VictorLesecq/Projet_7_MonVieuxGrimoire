@@ -66,7 +66,7 @@ exports.modifyBook = (req, res, next) => {
                                 });
                                 res.status(200).json({message : 'Objet modifié !'})
                             })
-                            .catch(error => res.status(401).json({ message : 'problème de modification2'  }));
+                            .catch(error => res.status(401).json({ message : 'problème de modification'  }));
             } else {
                 //if the file doesn't change, we only update the data
                 const updatedBook = {...req.body};
@@ -78,7 +78,7 @@ exports.modifyBook = (req, res, next) => {
             }
         }
     })
-    .catch(error => res.status(400).json({ error }));
+    .catch(error => res.status(404).json({ message : 'Ressource non trouvée' }));
 }
 
 exports.rateBook = (req, res, next) => {
@@ -109,7 +109,7 @@ exports.deleteBook = (req, res, next) => {
     Book.findOne({_id: req.params.id})
         .then(book => {
             if(book.userId != req.auth.userId){
-                res.status(401).json({message: 'Non-autorisé'});
+                res.status(403).json({message: 'Non-autorisé'});
             } else {
                 const filename = book.imageUrl.split('/images/')[1];
                 fs.unlink(`images/${filename}`, () => {
