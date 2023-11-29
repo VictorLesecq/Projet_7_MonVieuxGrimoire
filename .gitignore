@@ -1,1 +1,4 @@
 node_modules
+
+# Exclude .env files
+.env

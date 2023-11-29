@@ -85,18 +85,21 @@ exports.rateBook = (req, res, next) => {
     Book.findOne({ _id: req.params.id })
         .then(book => {
             if(book.ratings.some(item => item.userId === req.auth.userId)){
-                console.log("note déjà enregistrée");
                 res.status(401).json({message: 'Note déjà enregistrée pour ce livre'});
             } else {
-                book.ratings.push({
-                    userId: req.auth.userId,
-                    grade: req.body.rating
-                });
-                const newAverageRating = book.ratings.reduce((acc, element) => acc + element.grade, 0)/book.ratings.length;
-                book.averageRating = newAverageRating;
-                book.save()
-                .then(()=> res.status(201).json(book))
-                .catch(error => res.status(400).json({ error }));
+                if(req.body.rating <0 | req.body.rating >5){
+                    res.status(401).json({message: 'La note doit être comprise entre 0 et 5'});
+                } else {
+                    book.ratings.push({
+                        userId: req.auth.userId,
+                        grade: req.body.rating
+                    });
+                    const newAverageRating = book.ratings.reduce((acc, element) => acc + element.grade, 0)/book.ratings.length;
+                    book.averageRating = newAverageRating;
+                    book.save()
+                    .then(()=> res.status(201).json(book))
+                    .catch(error => res.status(400).json({ error }));
+                }
             }
         })
         .catch(error => res.status(500).json({ error }));
